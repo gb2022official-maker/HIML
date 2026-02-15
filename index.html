@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Q + A</title>
+
+<style>
+:root{
+  --bg1:#0f0f17;
+  --bg2:#1c1c2b;
+  --glow1:#8a5cff;
+  --glow2:#00e5ff;
+}
+
+html,body{
+  margin:0;
+  height:100%;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: radial-gradient(circle at 30% 30%, var(--bg2), var(--bg1));
+  overflow:hidden;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+/* subtle floating background glow */
+body::before{
+  content:"";
+  position:absolute;
+  width:600px;
+  height:600px;
+  background: radial-gradient(circle, var(--glow1), transparent 60%);
+  filter: blur(120px);
+  opacity:0.15;
+  top:-150px;
+  left:-150px;
+}
+
+body::after{
+  content:"";
+  position:absolute;
+  width:500px;
+  height:500px;
+  background: radial-gradient(circle, var(--glow2), transparent 60%);
+  filter: blur(120px);
+  opacity:0.12;
+  bottom:-150px;
+  right:-150px;
+}
+
+/* glass frame */
+.frame{
+  position:relative;
+  width:85vw;
+  height:90vh;
+  background: rgba(255,255,255,0.05);
+  backdrop-filter: blur(20px);
+  border-radius:20px;
+  box-shadow:
+    0 20px 60px rgba(0,0,0,0.6),
+    0 0 0 1px rgba(255,255,255,0.05);
+  overflow:hidden;
+}
+
+/* subtle top bar */
+.topbar{
+  height:50px;
+  display:flex;
+  align-items:center;
+  padding:0 20px;
+  color:rgba(255,255,255,0.6);
+  font-size:14px;
+  letter-spacing:2px;
+  text-transform:uppercase;
+  border-bottom:1px solid rgba(255,255,255,0.05);
+  background:rgba(0,0,0,0.2);
+}
+
+/* iframe */
+iframe{
+  width:100%;
+  height:calc(100% - 50px);
+  border:0;
+  background:white;
+}
+</style>
+</head>
+
+<body>
+
+<div class="frame">
+  <div class="topbar">
+    Q + A
+  </div>
+  <iframe 
+    src="https://docs.google.com/document/d/e/2PACX-1vQlXrWnunrXcnNpMGjYUalIm2vSps-lQezSljJC9z19so-ztMN1GJknrXc_CH6PM86pKNA-_1XRjG00/pub?embedded=true"
+    loading="lazy">
+  </iframe>
+</div>
+
+</body>
+</html>
