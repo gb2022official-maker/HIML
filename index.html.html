@@ -1,0 +1,567 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Human Interaction Metadata Layer (HIML) Proposal and Project Plan</title>
+  <meta name="color-scheme" content="dark light"/>
+  <style>
+    :root {
+      --bg0:#07070b; --bg1:#0b0b12;
+      --glass: rgba(255,255,255,0.06);
+      --stroke: rgba(255,255,255,0.10);
+      --text: rgba(255,255,255,0.90);
+      --muted: rgba(255,255,255,0.66);
+      --accent1:#8a5cff; --accent2:#00e5ff; --accent3:#00ff9d;
+      --shadow: rgba(0,0,0,0.55);
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:var(--sans);
+      color:var(--text);
+      background:
+        radial-gradient(900px 600px at 20% 15%, rgba(138,92,255,0.22), transparent 60%),
+        radial-gradient(800px 600px at 80% 25%, rgba(0,229,255,0.18), transparent 60%),
+        radial-gradient(900px 700px at 55% 90%, rgba(0,255,157,0.10), transparent 60%),
+        linear-gradient(180deg, var(--bg0), var(--bg1));
+      overflow-x:hidden;
+    }
+    .grain{
+      pointer-events:none;
+      position:fixed; inset:0;
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='.35'/%3E%3C/svg%3E");
+      opacity:.08; mix-blend-mode:overlay;
+    }
+    .topbar{
+      position:sticky; top:0; z-index:10;
+      backdrop-filter: blur(18px);
+      background: linear-gradient(180deg, rgba(10,10,16,0.78), rgba(10,10,16,0.40));
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .topbar-inner{
+      max-width:1100px; margin:0 auto;
+      padding:12px 18px;
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+    }
+    .brand{display:flex; flex-direction:column; gap:2px; min-width: 220px;}
+    .brand .kicker{font-size:12px; letter-spacing:.22em; text-transform:uppercase; color:var(--muted);}
+    .brand .t{font-size:14px; font-weight:650; color:rgba(255,255,255,0.92);}
+    .actions{display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end;}
+    .btn{
+      appearance:none; border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.06);
+      color: rgba(255,255,255,0.88);
+      padding: 9px 12px; border-radius: 12px;
+      cursor:pointer; font-size: 13px;
+      display:flex; align-items:center; gap:8px;
+      transition: transform .12s ease, border-color .12s ease, background .12s ease;
+      user-select:none;
+    }
+    .btn:hover{transform:translateY(-1px); border-color:rgba(255,255,255,0.20); background:rgba(255,255,255,0.08);}
+    .btn:active{transform:translateY(0px) scale(0.99);}
+    .wrap{max-width:1100px; margin:0 auto; padding: 22px 18px 64px;}
+    .card{
+      min-height: 85vh;
+    
+      background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.04));
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 22px;
+      box-shadow: 0 24px 70px var(--shadow);
+      overflow:hidden;
+    }
+    .content{padding: 22px; background: linear-gradient(180deg, rgba(10,10,16,0.22), rgba(10,10,16,0.12));}
+    .doc{max-width: 86ch; margin:0 auto; line-height:1.75; font-size:15px;}
+    .doc h1{font-size:26px; margin: 6px 0 14px; letter-spacing:.02em;}
+    .doc h2,.doc h3,.doc h4,.doc h5{margin: 22px 0 10px; line-height:1.25;}
+    .doc h2{font-size:18px;}
+    .doc h3{font-size:16px;}
+    .doc p{margin: 10px 0; color: rgba(255,255,255,0.90);}
+    .doc ul{margin: 10px 0 14px 18px; color: rgba(255,255,255,0.88);}
+    .doc li{margin: 6px 0;}
+    .doc a{color: rgba(0,229,255,0.95); text-decoration: none; border-bottom: 1px solid rgba(0,229,255,0.25);}
+    .doc a:hover{border-bottom-color: rgba(0,229,255,0.6);}
+    pre{
+      white-space: pre-wrap;
+      word-break: break-word;
+      max-height: none;
+    
+      margin: 14px 0;
+      padding: 14px 14px;
+      border-radius: 16px;
+      background: rgba(0,0,0,0.38);
+      border: 1px solid rgba(255,255,255,0.10);
+      overflow:visible;
+    }
+    code{font-family: var(--mono); font-size: 12.8px; color: rgba(255,255,255,0.90);}
+    .mermaid{
+      margin: 14px 0;
+      padding: 14px 14px;
+      border-radius: 16px;
+      background: rgba(0,0,0,0.32);
+      border: 1px solid rgba(255,255,255,0.10);
+      overflow:visible;
+    }
+    .toast{
+      position: fixed;
+      left: 50%;
+      bottom: 18px;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.55);
+      border: 1px solid rgba(255,255,255,0.12);
+      padding: 10px 12px;
+      border-radius: 999px;
+      color: rgba(255,255,255,0.86);
+      font-size: 13px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .18s ease, transform .18s ease;
+    }
+    .toast.show{opacity:1; transform: translateX(-50%) translateY(-2px);}
+    @media print {
+      .topbar, .grain, .toast { display:none !important; }
+      body { background: #fff; color:#111; }
+      .card { box-shadow:none; border: 1px solid #ddd; }
+      .content { background:#fff; }
+      .doc a { color:#1155cc; border-bottom:none; }
+      pre, .mermaid { background:#f6f6f6; color:#111; border:1px solid #e5e5e5; }
+      code { color:#111; }
+    }
+  </style>
+
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+</head>
+<body>
+  <div class="grain"></div>
+
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <div class="kicker">Document</div>
+        <div class="t">Human Interaction Metadata Layer (HIML) Proposal and Project Plan</div>
+      </div>
+      <div class="actions">
+        <button class="btn" id="copyBtn" title="Copy the full text">
+          <span>📋</span><span>Copy</span>
+        </button>
+        <button class="btn" onclick="window.print()" title="Print / Save as PDF">
+          <span>🖨️</span><span>Print</span>
+        </button>
+        <button class="btn" id="topBtn" title="Back to top">
+          <span>⬆️</span><span>Top</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="card">
+      <div class="content">
+        <article class="doc" id="docRoot">
+<h1>Human Interaction Metadata Layer (HIML) Proposal and Project Plan</h1>
+<h3>Executive summary</h3>
+<pre><code>Spatial grounding remains a consistent failure mode in many vision-language models (VLMs): models can identify salient objects and generate fluent descriptions, yet still misattribute “who has which attribute,” confuse left/right, or place entities in the wrong region of an image. Recent lines of work explicitly target grounding via detection/phrase alignment and open-set detection (e.g., GLIP, MDETR, Grounding DINO), primarily by incorporating box-level supervision or text-conditioned detection during training. [1] However, the broader ecosystem lacks a universally portable, compact, deterministic metadata layer that (a) makes spatial supervision cheap to index and retrieve at internet scale, and (b) can be used as a canonical training target for grounded VLMs.</code></pre>
+<p>This report proposes a Human Interaction Metadata Layer (HIML) with two complementary artifacts:</p>
+<pre><code>A full scene document (“HIML Doc”) stored in an object store and addressed by a deterministic content identifier (CID) derived from canonical encoding (for stable hashing and deduplication).
+A compact capsule string (“HUM1 capsule”, also called HP‑Lite / HUM1) suitable for embedding into standard metadata channels (XMP/IPTC), HTTP headers, or sidecar files, enabling robust search, retrieval, and training without re-running heavy vision pipelines.
+The proposal is designed around a narrow but high-leverage initial scope: human anchors that are both (1) curatable by humans and (2) highly predictive for spatial grounding tasks: person boxes, face boxes, hair region + hair color, hands and feet keypoints, and coarse torso anchors (chest, pelvis/hips). This aligns with the community’s repeated evidence that grounding improves when models have explicit region-level supervision rather than relying solely on caption association at scale (e.g., LAION or generic image-text corpora). [2]
+The plan provides a practical path from 5k curated “gold” images → 50M semi-automatic “silver” images → 1B optional “bronze” scale, using bootstrapping, teacher-student self-training, and active learning. The evaluation framework emphasizes spatial correctness (not just caption quality) and includes fairness checks across apparent skin tone bands using standardized tone scales—preferably the Monk Skin Tone (MST) scale for finer coverage, with compatibility back to Fitzpatrick for comparability where needed. [3]
+Finally, the adoption strategy treats HIML like a real standard: a small spec, a reference encoder/decoder, open-source labeler tooling, and easy integration into existing media metadata ecosystems such as IPTC Photo Metadata (XMP-based) and XMP as an ISO standard, rather than requiring new infrastructure. [4]</code></pre>
+<h3>Goals and scope</h3>
+<p>HIML is intended to solve three concrete problems:</p>
+<p>Deterministic, portable spatial supervision
+Enable any system (search engine, dataset builder, VLM trainer) to retrieve and use stable human-region annotations without repeated inference runs, using content addressability for deduplication and integrity.</p>
+<p>Internet-scale retrieval with spatial predicates
+Support structured queries such as “red hair bottom-left,” “two people close together,” or “person with raised right hand on the right side,” using capsule-level indexing.</p>
+<pre><code>A curated spatial-grounding corpus for training grounded VLMs
+Provide a canonical training target for region/text alignment and spatial reasoning, complementing existing datasets such as COCO (instances + keypoints), Visual Genome (dense objects/attributes/relationships), V‑COCO/HICO-DET (human-object interactions), and large web corpora such as LAION that are powerful but noisy and weakly grounded. [5]</code></pre>
+<h4>Non-goals in v1</h4>
+<p>Not a full scene graph for all objects (start with humans + limited anchors).</p>
+<p>Not “race inference.” Apparent skin tone (optional) is treated strictly as an appearance measurement for fairness evaluation, not identity.</p>
+<p>Not biometric identification; no face embeddings or identity features are stored.</p>
+<h3>HIML v1 specification (HP‑Lite / HUM1)</h3>
+<pre><code>This section defines: (a) minimal schema fields, (b) curator-friendly JSON, (c) canonical capsule serialization (readable and packed), and (d) deterministic hashing/CID rules.</code></pre>
+<h4>HIML artifacts</h4>
+<pre><code>Artifact A: HIML Doc (canonical scene document)
+- Stored in object storage (e.g., Cloudflare R2). - Encoded in deterministic CBOR (recommended: DAG‑CBOR profile) for stable hashing. CBOR deterministic encoding rules are standardized (map key ordering, canonical numeric rules). [6]
+- Addressed by a CIDv1 (multicodec + multihash) as used widely in content-addressed systems. [7]
+Artifact B: HUM1 capsule (compact metadata string)
+- Small, ASCII, parseable. - Deterministic serialization rules for stable hashing and deduplication. - Carries a pointer to the HIML Doc via cid= (optional but strongly recommended).</code></pre>
+<h4>Minimal HUM1 schema fields</h4>
+<pre><code>The table below defines the semantic schema (fields and constraints). The capsule formats (readable and packed) are simply two encodings of the same schema.</code></pre>
+<h5>Table: HUM1 minimal schema fields</h5>
+<p>Per-person record P[i]</p>
+<pre><code>Why these anchors?
+COCO demonstrated that keypoint/instance supervision materially improves localization tasks by providing explicit region-level targets. [9] Visual Genome demonstrated that dense object/attribute/relationship supervision enables structured reasoning, but is expensive. [10] HUM1 is intentionally narrower: enough anchors to support spatial queries and grounded language targets without requiring dense graph annotation in v1.</code></pre>
+<h4>Deterministic coordinate normalization</h4>
+<p>All capsule coordinates live on a 00–99 percent grid (two digits, zero-padded). This has three properties:</p>
+<p>small and stable for metadata embedding,</p>
+<pre><code>comparable to W3C “percent” spatial fragments (xywh=percent:) used for addressing parts of media, easing interoperability thinking, [11]</code></pre>
+<p>deterministic rounding.</p>
+<p>Given image width W and height H in pixels and a pixel coordinate (x,y):</p>
+<pre><code>x99 = clamp( round( 99 * x / (W-1) ), 0, 99 )
+y99 = clamp( round( 99 * y / (H-1) ), 0, 99 )
+For a bbox (x1,y1,x2,y2) (pixel coordinates, inclusive), normalize each corner independently and enforce ordering:
+x1&lt;=x2, y1&lt;=y2 after normalization (swap if needed, or treat as invalid).</code></pre>
+<h4>Canonical capsule serialization rules (for deterministic hashing)</h4>
+<p>HUM1 supports two encodings:</p>
+<p>Readable DSL (“HUM1‑DSL”) for debugging/manual inspection.</p>
+<p>Packed form (“HUM1‑P”) optimized for byte size and indexing.</p>
+<p>Both encodings are required to follow the same canonical content rules:</p>
+<p>Canonical rules</p>
+<p>ASCII only; no whitespace.</p>
+<p>All percent-grid integers are two digits: 00..99.</p>
+<p>Person records are ordered by primary sort key: (pb_center_x, pb_center_y, pb_area) ascending, all computed on the 00–99 grid.</p>
+<p>Within a person record, fields appear in a fixed order:</p>
+<p>u, g/gc, pb, fc, hc/hb, ch/cc, hp, hL, hR, fL, fR, o, tS/tB/tC</p>
+<p>Omit optional fields entirely if unknown (do not emit empty markers).</p>
+<pre><code>Enumerations are lowercase (hc) and single-letter (g, tS) per spec.</code></pre>
+<p>Hashing for dedup: hash the exact canonical capsule bytes or, preferably, hash the canonical CBOR HIML Doc and carry cid= in capsule.</p>
+<h4>Deterministic HIML Doc encoding and CID strategy</h4>
+<p>Recommended: DAG‑CBOR + CIDv1</p>
+<pre><code>Encode the HIML Doc using deterministic CBOR rules (RFC 8949 deterministic encoding), ensuring that semantically equivalent docs produce identical bytes. [12]</code></pre>
+<p>Use DAG‑CBOR for “hash consistent representations” in IPLD-style systems. [13]</p>
+<pre><code>Compute CIDv1 using multihash (sha2‑256) and multicodec dag-cbor. CID design and multiformats are standardized in the multiformats ecosystem and documented in IPFS concepts references. [7]</code></pre>
+<h4>Compact capsule examples and byte-size estimates</h4>
+<p>Below are two encodings of identical content: a readable DSL and a compact packed form. Byte counts are computed for example strings (ASCII bytes).</p>
+<h5>Readable DSL format (HUM1‑DSL)</h5>
+<p>Grammar sketch</p>
+<pre><code>Header: HUM1|cid=&lt;CID&gt;|I=&lt;0-4&gt;|</code></pre>
+<p>Person records separated by |</p>
+<pre><code>Inside person: p&lt;idx&gt;: and ; delimit fields
+Example (2 people)
+(illustrative CID shortened)
+HUM1|cid=bafybeigdyrzt2h6l4lzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz|I=2|
+p1:u=blk_hair_man;g=m74;pb(62,38,98,99);fc(70,40,88,58);hc=blk;hb(72,38,90,52);ch(70,55,92,72);cc=7;hp(72,72,92,94);hL(68,80);hR(85,78);fL(72,99);fR(88,99);o=1;t=M08c61|
+p2:u=red_hair_woman;g=f69;pb(08,18,46,96);fc(18,22,34,38);hc=red;hb(14,18,32,34);ch(16,40,36,58);cc=4;hp(16,62,38,86);hL(14,62);hR(39,55);fL(18,98);fR(34,98);o=2;t=M05c58</code></pre>
+<h5>Packed format (HUM1‑P)</h5>
+<pre><code>Packed form uses fixed field tokens with two-digit coordinates; u is optional (recommended in curation, optional in packed capsule if you need maximum compactness).
+Header: - HUM1|&lt;CID&gt;|I&lt;d&gt;|
+Per person record: - p&lt;idx&gt;&lt;g&gt;&lt;gc&gt;b&lt;x1y1x2y2&gt;f&lt;x1y1x2y2&gt;h&lt;hc&gt;&lt;x1y1x2y2&gt;c&lt;x1y1x2y2&gt;k&lt;cc&gt;p&lt;x1y1x2y2&gt;L&lt;xy&gt;R&lt;xy&gt;l&lt;xy&gt;r&lt;xy&gt;o&lt;d&gt;t&lt;tS&gt;&lt;tB&gt;&lt;tC&gt;;</code></pre>
+<p>Example (2 people)</p>
+<pre><code>HUM1|bafybeigdyrzt2h6l4lzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz|I2|
+p1m74b62389899f70408858hblk72389052c70559272k7p72729294L6880R8578l7299r8899o1tM0861;
+p2f69b08184696f18223438hred14183234c16403658k4p16623886L1462R3955l1898r3498o2tM0558</code></pre>
+<h5>Table: capsule byte-size estimates</h5>
+<h4>Sample canonical capsule strings for three diverse images (HUM1‑P)</h4>
+<p>These are canonical examples: zero-padded numbers, fixed ordering, no whitespace.</p>
+<p>Image A (indoor, normal lighting): black-haired man bottom-right, red-haired woman left, right hand raised</p>
+<pre><code>HUM1|bafybeiabbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb|I2|p1f67b08184696f18223438hred14183234c16403658k4p16623886L1462R3955l1898r3498o1tM0558;p2m74b62389899f70408858hblk72389052c70559272k7p72729294L6880R8578l7299r8899o1tM0861
+Image B (outdoor, bright): two people close, one blonde, one brown hair; both visible feet
+HUM1|bafybeiccccccccccccccccccccccccccccccccccccccccccccccccc|I1|p1f72b15406095f22346859hbln19304555c20466580k3p24558095L3048R4549l3798r5298o0tM0375;p2m70b44605898f50606770hbrn46506375c47688092k2p50729299L5669R6868l5899r7299o1tM0670
+Image C (low light/backlit): single person, hair unknown, face partially occluded; tone omitted due to low confidence
+HUM1|bafybeiddddddddddddddddddddddddddddddddddddddddddddddddd|I4|p1a41b20307090f25406558hunk22305162c25507085k1p30658095L3568R4469l3299r5099o3</code></pre>
+<h3>Curation workflow, curator JSON, and Labeler UI</h3>
+<h4>Curator JSON format (source of truth)</h4>
+<p>Curators should edit a human-friendly JSON; the capsule is derived deterministically. This avoids human error and makes audits/re-labeling possible.</p>
+<p>HIML‑JSON v1 (“HIMLDoc1”)</p>
+<p>Pixel coordinates are stored for UI fidelity.</p>
+<p>The encoder derives normalized 00–99 values.</p>
+<pre><code>Key design choice: canonical CID hashing is done over a deterministic binary (CBOR/DAG‑CBOR) form, not raw JSON, to avoid JSON ambiguity (whitespace, ordering). Deterministic CBOR rules are defined for hashable representations. [14]</code></pre>
+<p>Example JSON (abridged)</p>
+<pre><code>{
+  &quot;ver&quot;: &quot;HIMLDoc1&quot;,
+  &quot;image&quot;: {
+    &quot;sha256&quot;: &quot;5f3c...e91a&quot;,
+    &quot;w&quot;: 1920,
+    &quot;h&quot;: 1080,
+    &quot;mime&quot;: &quot;image/jpeg&quot;
+  },
+  &quot;global&quot;: { &quot;illum&quot;: 2 },
+  &quot;people&quot;: [
+    {
+      &quot;u&quot;: &quot;red_hair_woman&quot;,
+      &quot;presentation&quot;: { &quot;g&quot;: &quot;f&quot;, &quot;conf01&quot;: 0.69 },
+      &quot;pb_px&quot;: [154, 194, 885, 1037],
+      &quot;fc_px&quot;: [350, 240, 650, 420],
+      &quot;hair&quot;: { &quot;hc&quot;: &quot;red&quot;, &quot;hb_px&quot;: [270, 190, 620, 360], &quot;conf01&quot;: 0.87 },
+      &quot;chest&quot;: { &quot;ch_px&quot;: [300, 430, 690, 620], &quot;cc&quot;: 4, &quot;conf01&quot;: 0.73 },
+      &quot;hips&quot;: { &quot;hp_px&quot;: [310, 680, 720, 930], &quot;conf01&quot;: 0.72 },
+      &quot;hands&quot;: {
+        &quot;L_px&quot;: [270, 670, 0.66],
+        &quot;R_px&quot;: [760, 590, 0.70]
+      },
+      &quot;feet&quot;: {
+        &quot;L_px&quot;: [350, 1060, 0.55],
+        &quot;R_px&quot;: [650, 1060, 0.57]
+      },
+      &quot;quality&quot;: { &quot;occ&quot;: 1 },
+      &quot;tone&quot;: { &quot;scale&quot;: &quot;MST10&quot;, &quot;band&quot;: 5, &quot;conf01&quot;: 0.58 }
+    }
+  ]
+}
+Notes: - conf01 stores 0..1 floats in the curator JSON; the capsule converts them to 00..99 (round(99*conf01)). - Tone is optional and should often be omitted or set to unknown under low light or poor exposure; this matches fairness literature emphasizing that “apparent skin color” is sensitive to illumination and is best treated as apparent and uncertainty-scored, not absolute. [15]</code></pre>
+<h4>Labeler UI workflow</h4>
+<p>A practical v1 UI should behave like a “pose-lite” annotator:</p>
+<pre><code>Workflow steps - Load image from R2 and auto-suggest initial boxes/points from teacher models (optional). - Create persons (P1…Pn). - For each person: - drag person bbox (pb) - drag face bbox (fc) - drag hair bbox (hb) and choose hair color (hc) - drag chest bbox (ch) and set chest contour score (cc) via slider 0–9 - drag hips bbox (hp) - click left/right hands (hL, hR) and feet (fL, fR) - optionally set occlusion bucket o - optionally add presentation estimate g and confidence gc (UI should default to “unknown” and encourage abstention) - optionally add tone band tS/tB with confidence tC (best used in fairness auditing; should never be required) - Save JSON → server computes: - canonical normalized values - canonical capsule string (DSL + packed) - deterministic CBOR bytes → CID - stores artifacts.
+Quality controls - Enforce bbox bounds, x1&lt;=x2, minimum face/hair sizes - Confidence thresholds for including optional sensitive fields in capsule (e.g., include tone only if tC&gt;=70).</code></pre>
+<h3>Storage architecture and deterministic addressing (Cloudflare-first)</h3>
+<p>The aim is to make curation and retrieval low-friction, globally cached, and cheap, using Cloudflare primitives:</p>
+<pre><code>R2 for objects (images, JSON labels, CBOR docs). R2 has published pricing and is designed for object storage use cases. [16]
+Workers for the API and canonicalization pipeline; Workers pricing and request/CPU models are published. [17]
+Workers KV for hot small metadata and inverted indexes; KV pricing is published and intended for small key-value lookups. [18]</code></pre>
+<h4>Object layout (recommended)</h4>
+<pre><code>R2 - img/&lt;img_sha256&gt;.jpg
+- label/&lt;img_sha256&gt;.json (curator JSON; source of truth) - himl/&lt;cid&gt;.dagcbor.zst (canonical scene doc, deterministic CBOR, zstd-compressed)
+Zstandard is standardized for transport and widely documented; RFC 8878 registers zstd encoding/media type usage. [19]
+Deterministic CBOR is standardized; RFC 8949 defines deterministic encoding requirements. [20]
+KV - caps:&lt;img_sha256&gt; → packed capsule string (HUM1‑P) - cid:&lt;img_sha256&gt; → CID string - optional inverted indexes (careful with KV limits; for large scale, move heavy indexing to a DB/search engine): - idx:hc:red → list of image ids (sharded) - idx:q:BR → list of image ids, etc.</code></pre>
+<h4>CID strategy</h4>
+<p>Use CIDv1 base32 string for interoperability. CID design relies on multihash + multicodec + multibase. [7]</p>
+<pre><code>Recommended: - codec: dag-cbor (hash-consistent IPLD codec) [13]
+- hash: sha2-256
+- encode: base32 lower-case (standard CIDv1 display form) [8]</code></pre>
+<h4>Architecture diagram (mermaid)</h4>
+<div class="mermaid">flowchart LR
+  A[Curator Labeler UI] --&gt;|POST label JSON| W[Cloudflare Worker API]
+  W --&gt;|store| R2I[(R2: img/&lt;sha&gt;.jpg)]
+  W --&gt;|store| R2L[(R2: label/&lt;sha&gt;.json)]
+  W --&gt;|canonicalize + normalize| C[Canonicalizer]
+  C --&gt;|emit HUM1 capsule| KV[(Workers KV: caps:&lt;sha&gt;)]
+  C --&gt;|encode DAG-CBOR| B[Deterministic CBOR bytes]
+  B --&gt;|sha2-256 + CIDv1| CID[CID]
+  CID --&gt;|store zstd(CBOR)| R2D[(R2: himl/&lt;cid&gt;.dagcbor.zst)]
+  KV --&gt; Q[Query Worker]
+  Q --&gt;|fetch CID| R2D
+  Q --&gt;|return regions + matches| U[User/Search/Trainer]</div>
+<h3>Training pipeline, scale roadmap, and cost/compute estimates</h3>
+<h4>Why HIML helps training grounded VLMs</h4>
+<pre><code>HIML supplies what web-scale image-text pairs typically do not: explicit alignment targets. LAION-scale corpora enable broad semantic learning but are weakly supervised at the region level. [21] Grounding-focused methods show that adding region-level supervision (boxes, phrase grounding, text-conditioned detection) improves grounding and open-set detection behavior. [1]</code></pre>
+<p>HIML’s key training advantage is that it enables multiple training objectives from one annotation:</p>
+<p>region prediction (pb/fc/hb/ch/hp)</p>
+<p>keypoint regression (hands/feet)</p>
+<p>attribute classification (hair color)</p>
+<p>synthetic referring expressions (“the red-haired person on the left”) to train grounding heads</p>
+<p>structured output generation (learn to emit capsules or doc snippets)</p>
+<h4>Bootstrapping strategy: gold/silver/bronze</h4>
+<pre><code>Gold (human-verified) - 5k–200k images, curated for diversity (illumination, occlusion, apparent tone, age ranges, camera types). - Used for evaluation and calibration.
+Silver (teacher-labeled, audited) - Teacher pipeline (e.g., Grounding DINO + specialist face/hand estimators) generates candidate labels. - Keep only high-confidence outputs; sample and correct a subset. - Grounding DINO is explicitly designed for text-conditioned/open-set detection and is widely used as a practical teacher model. [22]
+Bronze (mass scale, minimally audited) - Automatic labels used for weak supervision and pretraining; not used as the sole evaluation source.</code></pre>
+<p>This “self-training” idea is consistent with GLIP’s use of self-training from web image-text pairs to generate grounding boxes and scale grounding supervision. [23]</p>
+<h4>Dataset scale roadmap (5k → 50M → 1B)</h4>
+<p>At each scale, the corpus artifact set is:</p>
+<p>curated JSON (gold/silver)</p>
+<p>canonical doc (CBOR + CID)</p>
+<p>capsule (packed)</p>
+<p>optional: synthetic language queries paired with region targets</p>
+<h5>Suggested roadmap phases</h5>
+<ul><li>Phase 0: 5k gold seed</li><li>Build labeler, schema, canonicalization, storage.</li><li>Measure inter-annotator agreement for bboxes and points.</li></ul>
+<ul><li>Phase 1: 100k–1M silver</li><li>Teacher models label; curators correct the hardest 5–10% via active learning.</li><li>Begin training student models for hair region, hair color, hand/foot points, face boxes.</li></ul>
+<ul><li>Phase 2: 50M semi-automatic</li><li>Run student models as new teachers; maintain gold evaluation panels.</li></ul>
+<pre><code>Phase 3: 1B optional - Primarily for large-scale pretraining objectives and retrieval. Emphasize legality, consent, and opt-outs; consider URL-only linking rather than storing all imagery, similar to LAION’s approach. [21]</code></pre>
+<h4>Compute/cost modeling assumptions</h4>
+<p>Costs depend heavily on throughput and provider. To keep estimates concrete but adjustable, we provide:</p>
+<p>Formulas (provider-independent)</p>
+<p>Example pricing anchors from published sources:</p>
+<pre><code>AWS EC2 Capacity Blocks list effective hourly rates for p5 instances with H100 accelerators (per-GPU and per-instance). [24]
+Cloudflare R2 storage pricing is published (e.g., $/GB-month). [25]</code></pre>
+<p>Workers / KV pricing is published. [26]</p>
+<p>Inference GPU-hours
+If teacher pipeline throughput is r images/sec:</p>
+<p>GPU-hours = N / r / 3600</p>
+<pre><code>Inference cost (example using AWS capacity blocks per-GPU rates where applicable): - cost ≈ GPU-hours × ($/GPU-hour) [24]</code></pre>
+<h5>Table: illustrative compute/cost estimates per scale</h5>
+<pre><code>Assume: - teacher throughput r = 4 imgs/sec per GPU (illustrative) - H100 price p = $3.93/GPU-hour (AWS Capacity Blocks example rate) [24] - average image size s = 0.5 MB stored in R2 (illustrative)
+Notes: - These numbers are illustrative; real throughput depends on model choice and batching. - Storage estimates can drop dramatically if you store only CIDs + capsules + URLs rather than full images, similar to LAION’s link-based distribution model. [21]</code></pre>
+<h4>Training compute (high-level)</h4>
+<p>Training compute is too configuration-dependent for a single “true” number, but HIML-based training breaks into three practical tracks:</p>
+<p>Anchor detectors (hair bbox, face bbox, chest/hips bboxes)</p>
+<p>Keypoint regressors (hands/feet)</p>
+<pre><code>Grounded VLM fine-tuning (emit regions/capsules; referring expressions)</code></pre>
+<p>Grounded detection and text-conditioned detection training has strong precedent in MDETR, GLIP, and Grounding DINO, which pretrain/fine-tune on aligned text-image datasets with region supervision. [28]</p>
+<h3>Retrieval algorithms, evaluation, and fairness checks</h3>
+<h4>Retrieval and query matching</h4>
+<p>HIML retrieval should be hybrid:</p>
+<p>Fast symbolic filtering using capsule tokens (hair color, quadrant, presence of hand points, etc.).</p>
+<p>Spatial matching using a cost function over normalized coordinates.</p>
+<pre><code>Optional embedding rerank (CLIP-like) for semantics, then enforce spatial constraints. CLIP is a canonical example of scalable image-text embedding learning. [29]</code></pre>
+<h5>Spatial matching core</h5>
+<p>Represent each candidate image as a set of persons with features:</p>
+<p>bbox centers (cx, cy)</p>
+<p>feature centers for hair/face/chest/hips</p>
+<p>hand points</p>
+<p>For a query that describes K people, build a query template with constraints and run an assignment (e.g., Hungarian matching) between query “slots” and detected persons to minimize total cost.</p>
+<pre><code>Example cost components - quadrant penalty (hard/soft) - L1 distance between expected and observed positions - attribute mismatch penalties (hair color mismatch) - optional relational constraints (distance bands)</code></pre>
+<h5>Relation edges (derived in v1)</h5>
+<p>Even if v1 does not store explicit relations, you can derive useful ones:</p>
+<pre><code>near(p_i, p_j) if centroid distance &lt; threshold</code></pre>
+<p>left_of, right_of from cx ordering</p>
+<p>above, below from cy ordering</p>
+<p>front/back not supported in v1 unless depth cues are added later</p>
+<pre><code>These are inspired by scene graph approaches where objects and relations form queryable structures (Visual Genome is a canonical dataset for such representations). [30]</code></pre>
+<h5>Example queries enabled by HUM1</h5>
+<p>“red hair bottom-left” → filter hc=red, then check hb center in BL quadrant</p>
+<p>“man-presenting in bottom-right with visible right hand” → filter g=m, check pb center, require hR</p>
+<p>“two people close together, one blonde one brown” → filter hair colors, then minimize centroid distance between two matched persons</p>
+<p>“woman pointing on left” → v1 approximation: require hR above chest line and laterally extended; or add gesture extension in v2</p>
+<h4>Evaluation metrics</h4>
+<p>HIML needs evaluation at two levels:</p>
+<p>Per-field geometric accuracy</p>
+<p>End-to-end retrieval performance</p>
+<h5>Table: evaluation metric matrix</h5>
+<h4>Fairness and tone-band parity checks</h4>
+<pre><code>Fairness auditing in visual systems has repeatedly shown performance disparities by skin tone and gender presentation, motivating explicit evaluation protocols (e.g., Gender Shades; Predictive Inequity in Object Detection). [33]</code></pre>
+<h5>Recommended tone annotation approach</h5>
+<pre><code>Prefer Monk Skin Tone (MST 10) for more granular coverage and inclusivity; Google’s public materials explicitly position MST as a more inclusive scale and release it for broader adoption. [34]
+Maintain compatibility with Fitzpatrick (6) for comparability with older fairness studies. [33]
+Treat tone as apparent and confidence-scored, since illumination affects perceived tone; recent work argues that skin color fairness benchmarking benefits from multidimensional measures beyond a single light→dark axis. [35]</code></pre>
+<h5>Fairness tables you should publish every model release</h5>
+<p>For each field (person box, face box, hair box, hand points, hair color):</p>
+<p>report metric by:</p>
+<p>tone band (MST 1..10 or FST 1..6)</p>
+<p>illumination bucket (I)</p>
+<p>occlusion bucket (o)</p>
+<ul><li>Compute:</li><li>worst-group metric</li><li>max–min gap</li><li>relative error increase vs best group</li></ul>
+<p>This is directly motivated by findings such as: - object detectors showing predictive inequity for pedestrians grouped by Fitzpatrick tones, and that time-of-day/occlusion alone may not explain disparities. [36]</p>
+<h3>Privacy, ethics, opt-outs, adoption strategy, and risks</h3>
+<h4>Privacy and ethical constraints (required for standard viability)</h4>
+<p>HIML is metadata about people in images; it is not “just tags.” To keep HIML deployable:</p>
+<pre><code>Hard constraints - No identity claims (no names, no face embeddings, no recognition IDs). - Sensitive fields are optional and should be omitted by default in public capsules: - tS/tB/tC (tone) - g/gc (presentation estimate)
+Recommended opt-outs - “Do not annotate” flag per image (e.g., optout=1 in doc; capsule omitted). - “No sensitive fields” mode: generate capsules without tone/presentation even if present in curator JSON. - Confidence gating: publish tone/presentation only above threshold (e.g., &gt;=70) and never for minors.
+Dataset sourcing - Strongly prefer consented datasets for people-centric corpora. Casual Conversations is an example of a fairness dataset built from paid participants who agreed to their likeness being used for assessing fairness. [37]
+- If using web-scale sources, acknowledge that uncurated web datasets can contain problematic content; LAION-5B explicitly includes filtering signals (e.g., NSFW/toxic detection scores) and has public controversy around scraped content, which underscores the need for cleaning and governance. [38]</code></pre>
+<h4>Adoption strategy to become a standard</h4>
+<ul><li>A metadata standard succeeds when:</li><li>it is small,</li><li>it is deterministic,</li><li>it is easy to implement,</li><li>and it plugs into existing ecosystems.</li></ul>
+<ul><li>Spec publication</li><li>Publish HUM1 capsule spec + HIML Doc spec under a permissive license.</li><li>Provide conformance tests: given a JSON label, expected capsule string and CID bytes.</li></ul>
+<pre><code>Reference implementations - himl-encoder (JSON → canonical capsule + DAG‑CBOR + CID) - himl-decoder (capsule → structured record) - himl-query (query DSL → candidate matching + scoring)
+Open-source tooling - Web labeler UI (Workers + R2) - Dataset export scripts to common formats (COCO-like subsets, RefCOCO-like referring expression tasks)
+Integration incentives - Make capsules embeddable in existing photo metadata standards: - IPTC Photo Metadata is widely used and XMP-based. [39] - XMP is standardized (ISO 16684‑1), making it a credible carriage layer for interoperable metadata. [40] - Provide a “capsule-only” mode that is tiny (sub‑1KB even for crowds), encouraging platforms to include it without infrastructure changes.
+Interoperability hooks - Provide mapping to W3C Media Fragments xywh=percent: semantics to allow external systems to reference the same regions in URIs. [11]</code></pre>
+<h4>Risks and mitigation</h4>
+<pre><code>Risk: label noise at scale
+Mitigation: gold/silver/bronze tiers; consensus labeling; strict confidence thresholds; continuous evaluation against gold panels.
+Risk: drift and non-determinism
+Mitigation: canonicalization rules; deterministic encoding (RFC 8949); CID hash of canonical doc; publish conformance test vectors. [41]
+Risk: sensitive attribute misuse (tone, presentation)
+Mitigation: optional fields; opt-outs; publish only with high confidence; avoid identity inference; document intended use (fairness auditing and robustness measurement, not profiling). Fairness literature shows both the importance and the sensitivity of these measurements. [42]
+Risk: dataset sourcing/legal exposure
+Mitigation: prioritize consented sources; for web-scale sources use URL-linking approaches (LAION-like) plus rigorous filtering and takedown mechanisms; publish governance docs. [43]
+Risk: KV indexing limits at massive scale
+Mitigation: KV for hot lookups and small indexes; move heavy inverted indexes to a database/search system as adoption grows; keep capsule parse fast so edge compute can do filtering cheaply. Workers/KV are priced for key-value access, but not as a full search engine. [44]</code></pre>
+<h4>Timeline (mermaid)</h4>
+<div class="mermaid">gantt
+  title HIML project timeline (illustrative)
+  dateFormat  YYYY-MM-DD
+  axisFormat  %b %Y
+
+  section Foundation
+  Spec + conformance vectors           :a1, 2026-03-01, 45d
+  Labeler UI (Workers + R2)            :a2, 2026-03-15, 60d
+  Canonicalizer + CID pipeline         :a3, 2026-03-15, 60d
+
+  section Gold corpus
+  5k gold labeling + QA                :b1, 2026-04-15, 75d
+  Baseline metrics + fairness tables   :b2, 2026-05-15, 45d
+
+  section Bootstrapping
+  Teacher labeling + active learning   :c1, 2026-06-15, 120d
+  Train v1 student models              :c2, 2026-07-01, 120d
+
+  section Scaling
+  1M silver release                    :d1, 2026-10-01, 60d
+  50M semi-auto pipeline               :d2, 2026-12-01, 180d
+
+  section Standardization
+  Open-source encoder/decoder + SDKs   :e1, 2026-06-01, 180d
+  Metadata embedding (XMP/IPTC)        :e2, 2026-08-01, 120d</div>
+<pre><code>[1] [23] Grounded Language-Image Pre-training</code></pre>
+<p><a href="https://arxiv.org/abs/2112.03857?utm_source=chatgpt.com" target="_blank" rel="noopener">https://arxiv.org/abs/2112.03857?utm_source=chatgpt.com</a></p>
+<pre><code>[2] [21] [43] LAION-400M: Open Dataset of CLIP-Filtered 400 Million Image-Text Pairs</code></pre>
+<p><a href="https://arxiv.org/abs/2111.02114?utm_source=chatgpt.com" target="_blank" rel="noopener">https://arxiv.org/abs/2111.02114?utm_source=chatgpt.com</a></p>
+<pre><code>[3] [34] Improving skin tone representation across Google</code></pre>
+<p><a href="https://blog.google/innovation-and-ai/products/monk-skin-tone-scale/?utm_source=chatgpt.com" target="_blank" rel="noopener">https://blog.google/innovation-and-ai/products/monk-skin-tone-scale/?utm_source=chatgpt.com</a></p>
+<pre><code>[4] [39] IPTC Photo Metadata Standard</code></pre>
+<p><a href="https://iptc.org/standards/photo-metadata/iptc-standard/?utm_source=chatgpt.com" target="_blank" rel="noopener">https://iptc.org/standards/photo-metadata/iptc-standard/?utm_source=chatgpt.com</a></p>
+<pre><code>[5] [9] Microsoft COCO: Common Objects in Context</code></pre>
+<p><a href="https://arxiv.org/abs/1405.0312?utm_source=chatgpt.com" target="_blank" rel="noopener">https://arxiv.org/abs/1405.0312?utm_source=chatgpt.com</a></p>
+<pre><code>[6] [12] [14] [20] [41] RFC 8949 - Concise Binary Object Representation (CBOR)</code></pre>
+<p><a href="https://datatracker.ietf.org/doc/html/rfc8949?utm_source=chatgpt.com" target="_blank" rel="noopener">https://datatracker.ietf.org/doc/html/rfc8949?utm_source=chatgpt.com</a></p>
+<p>[7] multiformats/cid: Self-describing content-addressed identifiers for ...</p>
+<p><a href="https://github.com/multiformats/cid?utm_source=chatgpt.com" target="_blank" rel="noopener">https://github.com/multiformats/cid?utm_source=chatgpt.com</a></p>
+<pre><code>[8] Content Identifiers (CIDs) - IPFS Docs</code></pre>
+<p><a href="https://docs.ipfs.tech/concepts/content-addressing/?utm_source=chatgpt.com" target="_blank" rel="noopener">https://docs.ipfs.tech/concepts/content-addressing/?utm_source=chatgpt.com</a></p>
+<p>[10] Visual Genome: Connecting Language and Vision Using ...</p>
+<p><a href="https://arxiv.org/abs/1602.07332?utm_source=chatgpt.com" target="_blank" rel="noopener">https://arxiv.org/abs/1602.07332?utm_source=chatgpt.com</a></p>
+<pre><code>[11] Media Fragments URI 1.0 (basic)</code></pre>
+<p><a href="https://www.w3.org/TR/media-frags/?utm_source=chatgpt.com" target="_blank" rel="noopener">https://www.w3.org/TR/media-frags/?utm_source=chatgpt.com</a></p>
+<ul><li>[13] Specification: DAG-CBOR</li><li>IPLD</li></ul>
+<p><a href="https://ipld.io/specs/codecs/dag-cbor/spec/?utm_source=chatgpt.com" target="_blank" rel="noopener">https://ipld.io/specs/codecs/dag-cbor/spec/?utm_source=chatgpt.com</a></p>
+<pre><code>[15] [35] Beyond Skin Tone: A Multidimensional Measure of Apparent ...</code></pre>
+<p><a href="https://openaccess.thecvf.com/content/ICCV2023/papers/Thong_Beyond_Skin_Tone_A_Multidimensional_Measure_of_Apparent_Skin_Color_ICCV_2023_paper.pdf?utm_source=chatgpt.com" target="_blank" rel="noopener">https://openaccess.thecvf.com/content/ICCV2023/papers/Thong_Beyond_Skin_Tone_A_Multidimensional_Measure_of_Apparent_Skin_Color_ICCV_2023_paper.pdf?utm_source=chatgpt.com</a></p>
+<p>[16] R2 pricing</p>
+<p><a href="https://developers.cloudflare.com/r2/pricing/?utm_source=chatgpt.com" target="_blank" rel="noopener">https://developers.cloudflare.com/r2/pricing/?utm_source=chatgpt.com</a></p>
+<pre><code>[17] [26] Pricing · Cloudflare Workers docs</code></pre>
+<p><a href="https://developers.cloudflare.com/workers/platform/pricing/?utm_source=chatgpt.com" target="_blank" rel="noopener">https://developers.cloudflare.com/workers/platform/pricing/?utm_source=chatgpt.com</a></p>
+<p>[18] Pricing · Cloudflare Workers KV docs</p>
+<p><a href="https://developers.cloudflare.com/kv/platform/pricing/?utm_source=chatgpt.com" target="_blank" rel="noopener">https://developers.cloudflare.com/kv/platform/pricing/?utm_source=chatgpt.com</a></p>
+<ul><li>[19] RFC 8878</li><li>Zstandard Compression and the &#x27;application ...</li></ul>
+<p><a href="https://datatracker.ietf.org/doc/html/rfc8878?utm_source=chatgpt.com" target="_blank" rel="noopener">https://datatracker.ietf.org/doc/html/rfc8878?utm_source=chatgpt.com</a></p>
+<p>[22] Grounding DINO: Marrying DINO with Grounded Pre-Training for Open-Set Object Detection</p>
+<p><a href="https://arxiv.org/abs/2303.05499?utm_source=chatgpt.com" target="_blank" rel="noopener">https://arxiv.org/abs/2303.05499?utm_source=chatgpt.com</a></p>
+<p>[24] Amazon EC2 Capacity Blocks for ML Pricing</p>
+<p><a href="https://aws.amazon.com/ec2/capacityblocks/pricing/?utm_source=chatgpt.com" target="_blank" rel="noopener">https://aws.amazon.com/ec2/capacityblocks/pricing/?utm_source=chatgpt.com</a></p>
+<pre><code>[25] [27] Cloudflare R2 | Zero Egress Fee Object Storage</code></pre>
+<p><a href="https://www.cloudflare.com/developer-platform/products/r2/?utm_source=chatgpt.com" target="_blank" rel="noopener">https://www.cloudflare.com/developer-platform/products/r2/?utm_source=chatgpt.com</a></p>
+<p>[28] MDETR -- Modulated Detection for End-to-End Multi-Modal Understanding</p>
+<p><a href="https://arxiv.org/abs/2104.12763?utm_source=chatgpt.com" target="_blank" rel="noopener">https://arxiv.org/abs/2104.12763?utm_source=chatgpt.com</a></p>
+<p>[29] Learning Transferable Visual Models From Natural Language Supervision</p>
+<p><a href="https://arxiv.org/abs/2103.00020?utm_source=chatgpt.com" target="_blank" rel="noopener">https://arxiv.org/abs/2103.00020?utm_source=chatgpt.com</a></p>
+<p>[30] Visual Genome: Connecting Language and Vision Using ...</p>
+<p><a href="https://link.springer.com/article/10.1007/s11263-016-0981-7?utm_source=chatgpt.com" target="_blank" rel="noopener">https://link.springer.com/article/10.1007/s11263-016-0981-7?utm_source=chatgpt.com</a></p>
+<pre><code>[31] arXiv:1701.03439v1 [cs.CV] 12 Jan 2017</code></pre>
+<p><a href="https://arxiv.org/pdf/1701.03439?utm_source=chatgpt.com" target="_blank" rel="noopener">https://arxiv.org/pdf/1701.03439?utm_source=chatgpt.com</a></p>
+<p>[32] Casual Conversations: A dataset for measuring fairness in AI</p>
+<p><a href="https://openaccess.thecvf.com/content/CVPR2021W/RCV/papers/Hazirbas_Casual_Conversations_A_Dataset_for_Measuring_Fairness_in_AI_CVPRW_2021_paper.pdf?utm_source=chatgpt.com" target="_blank" rel="noopener">https://openaccess.thecvf.com/content/CVPR2021W/RCV/papers/Hazirbas_Casual_Conversations_A_Dataset_for_Measuring_Fairness_in_AI_CVPRW_2021_paper.pdf?utm_source=chatgpt.com</a></p>
+<pre><code>[33] [42] Gender Shades: Intersectional Accuracy Disparities in ...</code></pre>
+<p><a href="https://proceedings.mlr.press/v81/buolamwini18a/buolamwini18a.pdf?utm_source=chatgpt.com" target="_blank" rel="noopener">https://proceedings.mlr.press/v81/buolamwini18a/buolamwini18a.pdf?utm_source=chatgpt.com</a></p>
+<p>[36] Predictive Inequity in Object Detection</p>
+<p><a href="https://arxiv.org/abs/1902.11097?utm_source=chatgpt.com" target="_blank" rel="noopener">https://arxiv.org/abs/1902.11097?utm_source=chatgpt.com</a></p>
+<p>[37] Casual Conversations: A Dataset for Measuring Fairness in AI</p>
+<p><a href="https://openaccess.thecvf.com/content/CVPR2021W/RCV/html/Hazirbas_Casual_Conversations_A_Dataset_for_Measuring_Fairness_in_AI_CVPRW_2021_paper.html?utm_source=chatgpt.com" target="_blank" rel="noopener">https://openaccess.thecvf.com/content/CVPR2021W/RCV/html/Hazirbas_Casual_Conversations_A_Dataset_for_Measuring_Fairness_in_AI_CVPRW_2021_paper.html?utm_source=chatgpt.com</a></p>
+<p>[38] LAION-5B: An open large-scale dataset for training next generation image-text models</p>
+<p><a href="https://arxiv.org/abs/2210.08402?utm_source=chatgpt.com" target="_blank" rel="noopener">https://arxiv.org/abs/2210.08402?utm_source=chatgpt.com</a></p>
+<pre><code>[40] ISO 16684-1:2019 - Extensible metadata platform (XMP)</code></pre>
+<p><a href="https://www.iso.org/standard/75163.html?utm_source=chatgpt.com" target="_blank" rel="noopener">https://www.iso.org/standard/75163.html?utm_source=chatgpt.com</a></p>
+<ul><li>[44] Cloudflare Workers KV</li><li>Global Key-Value Database</li></ul>
+<p><a href="https://workers.cloudflare.com/product/kv?utm_source=chatgpt.com" target="_blank" rel="noopener">https://workers.cloudflare.com/product/kv?utm_source=chatgpt.com</a></p>
+        </article>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast">Copied.</div>
+
+  <script>
+    // Mermaid render (dark theme)
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: "dark",
+      securityLevel: "loose"
+    });
+
+    const toast = document.getElementById('toast');
+    function showToast(msg){
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(()=>toast.classList.remove('show'), 1200);
+    }
+
+    document.getElementById('topBtn').addEventListener('click', () => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    document.getElementById('copyBtn').addEventListener('click', async () => {
+      const text = document.getElementById('docRoot').innerText;
+      try {
+        await navigator.clipboard.writeText(text);
+        showToast("Copied.");
+      } catch (e) {
+        showToast("Copy failed (browser blocked).");
+      }
+    });
+  </script>
+</body>
+</html>
